@@ -1,0 +1,12 @@
+exp_name: 'soda-d'
+classes: ['person', 'vehicle']
+
+# dataset name is in this format: dataset_dir/.json
+train_datasets: ['SODA-D/train.json']
+val_datasets: ['SODA-D/val.json']
+test_datasets: ['SODA-D/test.json']
+
+add_background_label: True
+epochs: 20
+model: 'resnet18'
+devices: 1

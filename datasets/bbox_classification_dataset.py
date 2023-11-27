@@ -1,20 +1,23 @@
-import torch
 from torch.utils.data import Dataset
-from ThermalClassifier.datasets.classes import ImageSample
+import torch
+from ThermalClassifier.datasets.classes import BboxSample
 from pycocotools.coco import COCO
-from transforms import monet_transforms
 
-class MONETDataset(Dataset):
+class BboxClassificationDataset(Dataset):
     def __init__(self,
-                data_root_dir: str,
+                root_dir: str,
                 class2idx: dict, 
-                split: str) -> None:
+                annotation_file_name: str,
+                transforms = None) -> None:
         
-        self.data_root_dir = data_root_dir
-        self.transforms = monet_transforms(split, class2idx)
+        self.root_dir = root_dir
+        self.transforms = transforms
 
-        data = COCO(f"{data_root_dir}/MONET/dirtroad/{split}.json")
-        
+        try:
+            data = COCO(f"{root_dir}/{annotation_file_name}")
+        except:
+            raise Exception(f"{root_dir} does not have {annotation_file_name} !")
+
         self.class_mapper = self.create_class_mapper(data.cats, class2idx)
 
         # only anns that has wanted classes !
@@ -32,6 +35,7 @@ class MONETDataset(Dataset):
         return {old_idx: class2idx[class_name] for class_name, old_idx in old_class2idx.items() 
                                                 if class_name in class2idx.keys()}
 
+
     def __len__(self):
         return len(self.anns_ids)
 
@@ -44,11 +48,11 @@ class MONETDataset(Dataset):
         label = self.class_mapper[self.anns_dict[ann_id]['category_id']]
     
         image_id = self.anns_dict[ann_id]['image_id']
-        image_path = f"{self.data_root_dir}/MONET/{self.imgs_dict[image_id]['file_name']}"
+        image_path = f"{self.root_dir}/{self.imgs_dict[image_id]['file_name']}"
         
-        sample = ImageSample.create(image_path, bbox, label)
+        sample = BboxSample.create(image_path, bbox, label)
 
-        #if self.transforms is not None:
-        sample = self.transforms(sample)
+        if self.transforms is not None:
+            sample = self.transforms(sample)
         
         return sample.image, torch.tensor(sample.label)
